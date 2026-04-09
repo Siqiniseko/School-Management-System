@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Virtual Classroom - SA School Management{% endblock %}
+
+{% block page_title %}Virtual Classroom{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Upcoming Classes -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h5><i class="fas fa-video me-2"></i>Upcoming Virtual Classes</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if upcoming_classes %}
+                    <div class="list-group list-group-flush">
+                        {% for vc in upcoming_classes %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ vc.title }}</h6>
+                                    <p class="mb-1 small">
+                                        <i class="fas fa-users me-1"></i> {{ vc.class_.name }}
+                                        <i class="fas fa-book ms-3 me-1"></i> {{ vc.subject.name if vc.subject else 'General' }}
+                                    </p>
+                                    <p class="mb-0 small text-muted">
+                                        <i class="far fa-clock me-1"></i> 
+                                        {{ vc.start_time.strftime('%d %b %Y, %H:%M') }} ({{ vc.duration }} mins)
+                                    </p>
+                                </div>
+                                <div>
+                                    {% if vc.start_time <= now <= vc.end_time %}
+                                    <a href="{{ vc.meeting_url }}" target="_blank" class="btn btn-success">
+                                        <i class="fas fa-play"></i> Join Now
+                                    </a>
+                                    {% else %}
+                                    <button class="btn btn-outline-primary" disabled>
+                                        Starts {{ vc.start_time.strftime('%H:%M') }}
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if vc.meeting_password %}
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-key"></i> Meeting ID: {{ vc.meeting_id }} | 
+                                    Password: {{ vc.meeting_password }}
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-4">No upcoming virtual classes</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Class Recordings -->
+            <div class="content-card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-play-circle me-2"></i>Class Recordings</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Recordings will appear here after the class ends</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            {% if current_user.role == 'teacher' or current_user.role == 'admin' %}
+            <!-- Schedule New Class -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h5>Schedule New Class</h5>
+                </div>
+                <div class="card-body">
+                    <form id="scheduleClassForm">
+                        <div class="mb-3">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-control" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Class</label>
+                            <select class="form-select" name="class_id" required>
+                                <option value="">Select Class</option>
+                                <!-- Classes will be loaded here -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Subject (Optional)</label>
+                            <select class="form-select" name="subject_id">
+                                <option value="">Select Subject</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Start Time</label>
+                            <input type="datetime-local" class="form-control" name="start_time" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Duration (minutes)</label>
+                            <input type="number" class="form-control" name="duration" value="60">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Platform</label>
+                            <select class="form-select" name="platform">
+                                <option value="zoom">Zoom</option>
+                                <option value="google_meet">Google Meet</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-calendar-plus"></i> Schedule Class
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Quick Tips -->
+            <div class="content-card mt-4">
+                <div class="card-header">
+                    <h5>Virtual Class Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-3">
+                            <i class="fas fa-check-circle text-success"></i>
+                            Test your audio and video before joining
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-check-circle text-success"></i>
+                            Find a quiet space with good lighting
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-check-circle text-success"></i>
+                            Mute your microphone when not speaking
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-check-circle text-success"></i>
+                            Use the chat feature for questions
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('scheduleClassForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/virtual-class/create', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Virtual class scheduled successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+});
+</script>
+{% endblock %}

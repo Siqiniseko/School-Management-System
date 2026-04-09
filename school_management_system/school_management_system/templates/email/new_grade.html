@@ -1,0 +1,28 @@
+{% extends "email/base.html" %}
+
+{% block title %}New Grade Posted{% endblock %}
+
+{% block content %}
+<h2>New Grade Posted</h2>
+
+<p>Dear {{ learner.user.full_name }},</p>
+
+<p>A new grade has been posted for your recent assessment.</p>
+
+<div class="alert alert-info">
+    <strong>Grade Details:</strong><br>
+    Subject: {{ grade.subject.name }}<br>
+    Assessment: {{ grade.assessment_type|title }}<br>
+    Score: {{ grade.score }}/{{ grade.max_score }} ({{ (grade.score/grade.max_score*100)|round(1) }}%)<br>
+    Grade Letter: {{ grade.grade_letter }}
+</div>
+
+{% if grade.remarks %}
+<p><strong>Teacher's Remarks:</strong></p>
+<p>{{ grade.remarks }}</p>
+{% endif %}
+
+<a href="{{ url_for('learner_dashboard', _external=True) }}" class="button">View Full Report</a>
+
+<p>Keep up the good work!</p>
+{% endblock %}

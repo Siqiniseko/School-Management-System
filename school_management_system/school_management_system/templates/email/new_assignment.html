@@ -1,0 +1,33 @@
+{% extends "email/base.html" %}
+
+{% block title %}New Assignment Posted{% endblock %}
+
+{% block content %}
+<h2>New Assignment: {{ assignment.title }}</h2>
+
+<div class="alert alert-info">
+    <strong>Assignment Details:</strong><br>
+    Subject: {{ assignment.subject.name }}<br>
+    Due Date: {{ assignment.due_date.strftime('%B %d, %Y at %I:%M %p') }}<br>
+    Maximum Score: {{ assignment.max_score }}
+</div>
+
+<p><strong>Description:</strong></p>
+<p>{{ assignment.description }}</p>
+
+{% if assignment.instructions %}
+<p><strong>Instructions:</strong></p>
+<p>{{ assignment.instructions }}</p>
+{% endif %}
+
+{% if assignment.allow_late_submission %}
+<div class="alert alert-warning">
+    <strong>Late submissions allowed</strong><br>
+    Late penalty: {{ assignment.late_penalty }}% deduction
+</div>
+{% endif %}
+
+<a href="{{ url_for('view_assignments', _external=True) }}" class="button">View Assignment Details</a>
+
+<p>Please submit your work before the due date.</p>
+{% endblock %}

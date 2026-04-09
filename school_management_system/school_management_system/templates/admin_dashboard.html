@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - School Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-tachometer-alt"></i> Admin Overview
+        </h1>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Learners
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_learners }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-graduate fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Teachers
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_teachers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chalkboard-teacher fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Classes
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_classes }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-door-open fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Subjects
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_subjects }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-book fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Grade Distribution -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-pie"></i> Grade Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="gradeChart"></canvas>
+                    <div class="mt-3">
+                        {% for grade, count in grade_stats.items() %}
+                        <div class="d-flex justify-content-between">
+                            <span>Grade {{ grade }}:</span>
+                            <strong>{{ count }}</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Today -->
+        <div class="col-xl-4 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-calendar-check"></i> Attendance Today
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <div class="display-1 font-weight-bold text-success">{{ attendance_percentage }}%</div>
+                        <p class="text-muted">Overall Attendance Rate</p>
+                    </div>
+                    <div class="progress mb-3">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ attendance_percentage }}%"></div>
+                    </div>
+                    <div id="attendanceDetails"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fees Collection -->
+        <div class="col-xl-4 col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-money-bill"></i> Fees Collection
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h5 class="text-success">R {{ "%.2f"|format(collected_fees) }}</h5>
+                                <p class="text-muted">Collected</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h5 class="text-danger">R {{ "%.2f"|format(outstanding_fees) }}</h5>
+                                <p class="text-muted">Outstanding</p>
+                            </div>
+                        </div>
+                    </div>
+                    <canvas id="feesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Notifications -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-bell"></i> Recent Notifications
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for notification in recent_notifications %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ notification.title }}</h6>
+                                <small>{{ notification.created_at.strftime('%Y-%m-%d') }}</small>
+                            </div>
+                            <p class="mb-1">{{ notification.message }}</p>
+                            <span class="badge bg-{{ 'danger' if notification.type == 'important' else 'info' }}">
+                                {{ notification.type }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Grade Distribution Chart
+const gradeCtx = document.getElementById('gradeChart').getContext('2d');
+new Chart(gradeCtx, {
+    type: 'doughnut',
+    data: {
+        labels: [{% for grade, count in grade_stats.items() %}'Grade {{ grade }}',{% endfor %}],
+        datasets: [{
+            data: [{% for grade, count in grade_stats.items() %}{{ count }},{% endfor %}],
+            backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e'],
+            hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf', '#dda20a'],
+            hoverBorderColor: "rgba(234, 236, 244, 1)",
+        }]
+    },
+    options: {
+        maintainAspectRatio: false,
+        tooltips: {
+            backgroundColor: "rgb(255,255,255)",
+            bodyFontColor: "#858796",
+            borderColor: '#dddfeb',
+            borderWidth: 1,
+            xPadding: 15,
+            yPadding: 15,
+            displayColors: false,
+            caretPadding: 10,
+        },
+        legend: { display: false },
+        cutoutPercentage: 80,
+    }
+});
+
+// Fees Chart
+const feesCtx = document.getElementById('feesChart').getContext('2d');
+new Chart(feesCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Collected', 'Outstanding'],
+        datasets: [{
+            data: [{{ collected_fees }}, {{ outstanding_fees }}],
+            backgroundColor: ['#1cc88a', '#e74a3b'],
+            hoverBackgroundColor: ['#17a673', '#be2617'],
+            hoverBorderColor: "rgba(234, 236, 244, 1)",
+        }]
+    },
+    options: {
+        maintainAspectRatio: false,
+        tooltips: {
+            backgroundColor: "rgb(255,255,255)",
+            bodyFontColor: "#858796",
+            borderColor: '#dddfeb',
+            borderWidth: 1,
+            xPadding: 15,
+            yPadding: 15,
+            displayColors: false,
+            caretPadding: 10,
+        },
+        legend: { position: 'bottom' },
+        cutoutPercentage: 60,
+    }
+});
+
+// Load attendance details
+fetch('/api/attendance/today')
+    .then(response => response.json())
+    .then(data => {
+        const details = `
+            <div class="row text-center">
+                <div class="col-4">
+                    <h5 class="text-success">${data.present}</h5>
+                    <small>Present</small>
+                </div>
+                <div class="col-4">
+                    <h5 class="text-danger">${data.absent}</h5>
+                    <small>Absent</small>
+                </div>
+                <div class="col-4">
+                    <h5 class="text-warning">${data.late}</h5>
+                    <small>Late</small>
+                </div>
+            </div>
+        `;
+        document.getElementById('attendanceDetails').innerHTML = details;
+    });
+
+// Load notifications
+fetch('/api/notifications/recent')
+    .then(response => response.json())
+    .then(data => {
+        const count = data.length;
+        document.getElementById('notificationCount').textContent = count;
+        
+        const list = document.getElementById('notificationList');
+        if (count === 0) {
+            list.innerHTML = '<div class="dropdown-item text-muted">No new notifications</div>';
+        } else {
+            list.innerHTML = data.map(n => `
+                <a class="dropdown-item" href="#">
+                    <strong>${n.title}</strong><br>
+                    <small class="text-muted">${n.message.substring(0, 50)}...</small>
+                </a>
+            `).join('');
+        }
+    });
+</script>
+{% endblock %}

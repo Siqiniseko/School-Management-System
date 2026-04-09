@@ -1,0 +1,491 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics Dashboard - School Management{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/apexcharts@3.35.0/dist/apexcharts.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-line"></i> Advanced Analytics
+        </h1>
+        <div>
+            <button class="btn btn-primary" onclick="refreshAnalytics()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button class="btn btn-success" onclick="exportAnalytics()">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="row mb-4" id="overviewCards"></div>
+
+    <!-- Performance Metrics -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Academic Performance Trends</h6>
+                </div>
+                <div class="card-body">
+                    <div id="performanceChart" style="height: 350px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Grade Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <div id="gradeDistributionChart" style="height: 350px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Analytics -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Attendance Heatmap</h6>
+                </div>
+                <div class="card-body">
+                    <div id="attendanceHeatmap" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Attendance by Day</h6>
+                </div>
+                <div class="card-body">
+                    <div id="attendanceByDayChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Analytics -->
+    <div class="row">
+        <div class="col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Fee Collection Trends</h6>
+                </div>
+                <div class="card-body">
+                    <div id="feeCollectionChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Outstanding Fees by Grade</h6>
+                </div>
+                <div class="card-body">
+                    <div id="outstandingFeesChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Engagement Metrics -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Teacher Activity & Engagement</h6>
+                </div>
+                <div class="card-body">
+                    <div id="teacherActivityChart" style="height: 350px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-lightbulb"></i> AI-Powered Recommendations
+                    </h6>
+                </div>
+                <div class="card-body" id="recommendationsList">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.35.0/dist/apexcharts.min.js"></script>
+<script>
+let charts = {};
+
+// Load all analytics data
+async function loadAnalytics() {
+    try {
+        // Load overview
+        const overview = await fetch('/api/analytics/overview').then(r => r.json());
+        displayOverviewCards(overview);
+        
+        // Load performance metrics
+        const performance = await fetch('/api/analytics/performance').then(r => r.json());
+        renderPerformanceChart(performance);
+        renderGradeDistributionChart(performance.grade_distribution);
+        
+        // Load attendance analytics
+        const attendance = await fetch('/api/analytics/attendance').then(r => r.json());
+        renderAttendanceByDayChart(attendance.by_day);
+        
+        // Load attendance heatmap
+        const heatmapData = await fetch('/api/analytics/heatmap/attendance').then(r => r.json());
+        renderAttendanceHeatmap(heatmapData);
+        
+        // Load financial analytics
+        const financial = await fetch('/api/analytics/financial').then(r => r.json());
+        renderFeeCollectionChart(financial.monthly_trend);
+        renderOutstandingFeesChart(financial.outstanding_by_grade);
+        
+        // Load engagement metrics
+        const engagement = await fetch('/api/analytics/engagement').then(r => r.json());
+        renderTeacherActivityChart(engagement.teacher_activity);
+        
+        // Load recommendations
+        const recommendations = await fetch('/api/analytics/recommendations').then(r => r.json());
+        displayRecommendations(recommendations);
+        
+    } catch (error) {
+        console.error('Error loading analytics:', error);
+    }
+}
+
+function displayOverviewCards(data) {
+    const html = `
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Learners
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">${data.total_learners}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-graduate fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Student-Teacher Ratio
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">${data.learner_teacher_ratio}:1</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chalkboard-teacher fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Classes
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">${data.total_classes}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-door-open fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Active Users (30d)
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">${data.active_users}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('overviewCards').innerHTML = html;
+}
+
+function renderPerformanceChart(data) {
+    const options = {
+        series: [{
+            name: 'Average Score',
+            data: data.subject_performance.map(s => s.avg_score)
+        }],
+        chart: {
+            type: 'bar',
+            height: 350,
+            toolbar: { show: false }
+        },
+        plotOptions: {
+            bar: {
+                horizontal: false,
+                columnWidth: '55%',
+                borderRadius: 5
+            }
+        },
+        dataLabels: { enabled: false },
+        xaxis: {
+            categories: data.subject_performance.map(s => s.subject),
+            labels: { rotate: -45 }
+        },
+        yaxis: {
+            title: { text: 'Average Score (%)' },
+            max: 100
+        },
+        title: { text: 'Subject Performance Overview' }
+    };
+    
+    if (charts.performance) charts.performance.destroy();
+    charts.performance = new ApexCharts(document.querySelector('#performanceChart'), options);
+    charts.performance.render();
+}
+
+function renderGradeDistributionChart(distribution) {
+    const options = {
+        series: Object.values(distribution),
+        chart: {
+            type: 'donut',
+            height: 350
+        },
+        labels: Object.keys(distribution).map(k => `${k}-${k+9}%`),
+        colors: ['#e74a3b', '#f6c23e', '#36b9cc', '#1cc88a', '#4e73df'],
+        legend: { position: 'bottom' }
+    };
+    
+    if (charts.gradeDist) charts.gradeDist.destroy();
+    charts.gradeDist = new ApexCharts(document.querySelector('#gradeDistributionChart'), options);
+    charts.gradeDist.render();
+}
+
+function renderAttendanceByDayChart(data) {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    
+    const options = {
+        series: [{
+            name: 'Attendance Rate',
+            data: data.map(d => d.rate)
+        }],
+        chart: {
+            type: 'line',
+            height: 300,
+            toolbar: { show: false }
+        },
+        stroke: { curve: 'smooth', width: 3 },
+        xaxis: {
+            categories: data.map(d => days[d.day])
+        },
+        yaxis: {
+            title: { text: 'Attendance Rate (%)' },
+            min: 0,
+            max: 100
+        }
+    };
+    
+    if (charts.attendanceByDay) charts.attendanceByDay.destroy();
+    charts.attendanceByDay = new ApexCharts(document.querySelector('#attendanceByDayChart'), options);
+    charts.attendanceByDay.render();
+}
+
+function renderAttendanceHeatmap(data) {
+    // Process data for heatmap
+    const options = {
+        series: [],
+        chart: {
+            type: 'heatmap',
+            height: 300,
+            toolbar: { show: false }
+        },
+        dataLabels: { enabled: false },
+        colors: ["#e74a3b", "#f6c23e", "#1cc88a"],
+        title: { text: 'Attendance Rate Heatmap' }
+    };
+    
+    // Group data by day and period
+    const heatmapSeries = [];
+    // Implementation depends on data structure
+    
+    if (charts.heatmap) charts.heatmap.destroy();
+    charts.heatmap = new ApexCharts(document.querySelector('#attendanceHeatmap'), options);
+    charts.heatmap.render();
+}
+
+function renderFeeCollectionChart(data) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    const options = {
+        series: [{
+            name: 'Amount Collected',
+            data: Object.entries(data).map(([month, amount]) => amount)
+        }],
+        chart: {
+            type: 'area',
+            height: 300,
+            toolbar: { show: false }
+        },
+        stroke: { curve: 'smooth', width: 2 },
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.7,
+                opacityTo: 0.3
+            }
+        },
+        xaxis: {
+            categories: Object.keys(data).map(m => months[parseInt(m)-1])
+        },
+        yaxis: {
+            title: { text: 'Amount (R)' },
+            labels: {
+                formatter: (val) => 'R ' + val.toLocaleString()
+            }
+        }
+    };
+    
+    if (charts.feeCollection) charts.feeCollection.destroy();
+    charts.feeCollection = new ApexCharts(document.querySelector('#feeCollectionChart'), options);
+    charts.feeCollection.render();
+}
+
+function renderOutstandingFeesChart(data) {
+    const options = {
+        series: Object.values(data),
+        chart: {
+            type: 'pie',
+            height: 300
+        },
+        labels: Object.keys(data).map(g => `Grade ${g}`),
+        legend: { position: 'bottom' }
+    };
+    
+    if (charts.outstandingFees) charts.outstandingFees.destroy();
+    charts.outstandingFees = new ApexCharts(document.querySelector('#outstandingFeesChart'), options);
+    charts.outstandingFees.render();
+}
+
+function renderTeacherActivityChart(data) {
+    const options = {
+        series: [{
+            name: 'Assignments Created',
+            data: data.map(t => t.assignments)
+        }, {
+            name: 'Grades Recorded',
+            data: data.map(t => t.grades)
+        }],
+        chart: {
+            type: 'bar',
+            height: 350,
+            stacked: false,
+            toolbar: { show: false }
+        },
+        xaxis: {
+            categories: data.map(t => t.name),
+            labels: { rotate: -45 }
+        },
+        yaxis: {
+            title: { text: 'Count' }
+        },
+        legend: { position: 'top' }
+    };
+    
+    if (charts.teacherActivity) charts.teacherActivity.destroy();
+    charts.teacherActivity = new ApexCharts(document.querySelector('#teacherActivityChart'), options);
+    charts.teacherActivity.render();
+}
+
+function displayRecommendations(recommendations) {
+    if (recommendations.length === 0) {
+        document.getElementById('recommendationsList').innerHTML = `
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-check-circle fa-3x mb-3"></i>
+                <p>No recommendations at this time. Great job!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const html = recommendations.map(rec => `
+        <div class="recommendation-item mb-3 p-3 border rounded ${rec.priority === 'high' ? 'border-danger' : ''}">
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                    <span class="badge bg-${rec.priority === 'high' ? 'danger' : rec.priority === 'medium' ? 'warning' : 'info'}">
+                        ${rec.priority.toUpperCase()}
+                    </span>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h6 class="mb-1">${rec.message}</h6>
+                    <button class="btn btn-sm btn-outline-primary mt-2" onclick="handleRecommendation('${rec.type}', '${rec.action}')">
+                        ${rec.action}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('recommendationsList').innerHTML = html;
+}
+
+function handleRecommendation(type, action) {
+    // Handle recommendation actions
+    console.log(`Handling ${type}: ${action}`);
+    // Implementation depends on recommendation type
+}
+
+function refreshAnalytics() {
+    loadAnalytics();
+}
+
+function exportAnalytics() {
+    // Export analytics data
+    window.location.href = '/api/analytics/export';
+}
+
+// Load analytics on page load
+document.addEventListener('DOMContentLoaded', loadAnalytics);
+</script>
+{% endblock %}
